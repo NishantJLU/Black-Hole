@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Horizon - Relativistic Black Hole Simulation</title>
+  <!-- Google Fonts for futuristic, scientific aesthetics -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Science HUD Overlay -->
+    <header class="hud-header">
+      <div class="hud-title-wrap">
+        <h1>EVENT HORIZON v1.2</h1>
+        <p class="subtitle">General Relativistic Ray-Tracer</p>
+      </div>
+      <div class="hud-actions" style="display: flex; gap: 12px; align-items: center; pointer-events: auto;">
+        <button class="btn" id="btn-toggle-hud" style="font-family: var(--font-mono); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-color: var(--accent-cyan-dim);">Cinematic View</button>
+        <div class="hud-status">
+          <div class="status-indicator active"></div>
+          <span id="metric-solution-name">SCHWARZSCHILD METRIC</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sidebar: Telemetry & Scientific Data -->
+    <aside class="hud-panel telemetry-panel" id="telemetry-panel">
+      <h2>SYSTEM TELEMETRY</h2>
+      <div class="panel-divider"></div>
+      
+      <div class="telemetry-grid">
+        <div class="telemetry-item">
+          <div class="tel-label">BH Classification</div>
+          <div class="tel-value" id="tel-class">Intermediate Mass</div>
+        </div>
+        
+        <div class="telemetry-item">
+          <div class="tel-label">Event Horizon (r<sub>h</sub>)</div>
+          <div class="tel-value" id="tel-horizon">5.91 km</div>
+          <div class="tel-sub">r = <span id="tel-horizon-units">2.00</span> GM/c²</div>
+        </div>
+        
+        <div class="telemetry-item">
+          <div class="tel-label">Photon Sphere (r<sub>ph</sub>)</div>
+          <div class="tel-value" id="tel-photon">8.86 km</div>
+          <div class="tel-sub">r = <span id="tel-photon-units">3.00</span> GM/c²</div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="tel-label">Disk Inner Edge (ISCO)</div>
+          <div class="tel-value" id="tel-isco">17.72 km</div>
+          <div class="tel-sub">r = <span id="tel-isco-units">6.00</span> GM/c²</div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="tel-label">Spin Parameter (a)</div>
+          <div class="tel-value" id="tel-spin">0.00</div>
+          <div class="tel-sub">Dimensionless (J/M²)</div>
+        </div>
+        
+        <div class="telemetry-item">
+          <div class="tel-label">Observer Time Dilation (dτ/dt)</div>
+          <div class="tel-value" id="tel-dilation">94.3%</div>
+          <div class="tel-sub">1s here = <span id="tel-dilation-ratio">1.06s</span> at ∞</div>
+        </div>
+        
+        <div class="telemetry-item">
+          <div class="tel-label">Escape Velocity (v<sub>esc</sub>)</div>
+          <div class="tel-value" id="tel-escape">98,340 km/s</div>
+          <div class="tel-sub"><span id="tel-escape-c">0.328</span> c (at camera)</div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="tel-label">Max Disk Temp</div>
+          <div class="tel-value" id="tel-temp">6,240 K</div>
+          <div class="tel-sub"><span class="temp-indicator" id="temp-color"></span> Blackbody Peak</div>
+        </div>
+
+        <div class="telemetry-item" id="tel-tidal-group">
+          <div class="tel-label">Tidal Stretching Force</div>
+          <div class="tel-value" id="tel-tidal-force">0.00 N</div>
+          <div class="tel-sub"><span id="tel-tidal-g">0.00</span> g-forces (<span id="tel-tidal-status" class="status-safe">SAFE</span>)</div>
+        </div>
+      </div>
+
+      <div class="scientific-overlay-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="toggle-overlays" checked>
+          <span class="slider round"></span>
+        </label>
+        <span>Calibration Crosshair</span>
+      </div>
+
+      <div class="scientific-overlay-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="toggle-ergosphere">
+          <span class="slider round"></span>
+        </label>
+        <span>Show Ergosphere Shell</span>
+      </div>
+
+      <div class="scientific-overlay-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="toggle-grid">
+          <span class="slider round"></span>
+        </label>
+        <span>Show Spacetime Grid</span>
+      </div>
+
+      <div class="scientific-overlay-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="toggle-particles" checked>
+          <span class="slider round"></span>
+        </label>
+        <span>Show Accretion Dust</span>
+      </div>
+
+      <div class="scientific-overlay-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="toggle-jets">
+          <span class="slider round"></span>
+        </label>
+        <span>Show Polar Jets</span>
+      </div>
+
+      <div class="scientific-overlay-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="toggle-disk-warp">
+          <span class="slider round"></span>
+        </label>
+        <span>Tilt Accretion Disk</span>
+      </div>
+
+      <div class="sidebar-action-group">
+        <button class="btn audio-btn" id="btn-audio">Acoustic HUD: OFF</button>
+        <button class="btn" id="btn-spawn-particle">Spawn Matter Dust</button>
+      </div>
+    </aside>
+
+    <!-- Bottom Panel: Simulation Controls -->
+    <main class="hud-panel control-panel">
+      <!-- Presets & Metric Selector -->
+      <section class="control-section select-section">
+        <h3>PRESETS & SCALE</h3>
+        <div class="preset-btn-group">
+          <button class="btn active" id="preset-gargantua">Gargantua (Interstellar)</button>
+          <button class="btn" id="preset-sgra">Sagittarius A*</button>
+          <button class="btn" id="preset-m87">M87* (Supermassive)</button>
+          <button class="btn" id="preset-bare">Naked Singularity</button>
+        </div>
+        
+        <div class="metric-selector">
+          <label for="metric-select">Spacetime Metric:</label>
+          <select id="metric-select" class="custom-select">
+            <option value="schwarzschild">Schwarzschild (Non-rotating)</option>
+            <option value="kerr">Kerr (Rotating, Frame Dragging)</option>
+          </select>
+        </div>
+
+        <div class="engine-scale-toggle">
+          <span class="toggle-label">Physical Scale:</span>
+          <div class="btn-group mini">
+            <button class="btn active" id="scale-stellar">Stellar (10 M<sub>☉</sub>)</button>
+            <button class="btn" id="scale-supermassive">Supermassive</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sliders Column 1: Black Hole Properties -->
+      <section class="control-section">
+        <h3>BLACK HOLE METRIC</h3>
+        
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="input-mass">Normalized Mass (M)</label>
+            <span class="value-display" id="val-mass">1.00</span>
+          </div>
+          <input type="range" id="input-mass" min="0.5" max="3.0" step="0.05" value="1.0">
+          <div class="slider-sub">Scales visual size & gravity bending.</div>
+        </div>
+
+        <div class="slider-group" id="spin-slider-group" style="opacity: 0.5; pointer-events: none;">
+          <div class="slider-header">
+            <label for="input-spin">Spin Parameter (a)</label>
+            <span class="value-display" id="val-spin">0.00</span>
+          </div>
+          <input type="range" id="input-spin" min="0.0" max="0.99" step="0.01" value="0.0">
+          <div class="slider-sub">Kerr metric spin (enables frame dragging).</div>
+        </div>
+
+        <div class="slider-row" style="margin-top: 4px;">
+          <div class="slider-group flex-1">
+            <div class="slider-header">
+              <label for="input-timescale">Time Speed</label>
+              <span class="value-display" id="val-timescale">1.00</span>
+            </div>
+            <input type="range" id="input-timescale" min="0.0" max="2.0" step="0.05" value="1.0">
+          </div>
+          <button class="btn flex-1" id="btn-skybox" style="margin-top: 15px; height: 32px; padding: 6px 10px;">Cycle Skybox</button>
+        </div>
+      </section>
+
+      <!-- Sliders Column 2: Accretion Disk Properties -->
+      <section class="control-section">
+        <h3>ACCRETION DISK</h3>
+        
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="input-disk-in">Inner Edge Radius (r<sub>in</sub>)</label>
+            <span class="value-display" id="val-disk-in">6.00</span>
+          </div>
+          <input type="range" id="input-disk-in" min="1.5" max="10.0" step="0.1" value="6.0">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="input-disk-out">Outer Edge Radius (r<sub>out</sub>)</label>
+            <span class="value-display" id="val-disk-out">16.00</span>
+          </div>
+          <input type="range" id="input-disk-out" min="8.0" max="25.0" step="0.5" value="16.0">
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-group flex-1">
+            <div class="slider-header">
+              <label for="input-temp">Disk Temp (K)</label>
+              <span class="value-display" id="val-temp">6500 K</span>
+            </div>
+            <input type="range" id="input-temp" min="2000" max="12000" step="100" value="6500">
+          </div>
+          
+          <div class="slider-group flex-1">
+            <div class="slider-header">
+              <label for="input-opacity">Opacity</label>
+              <span class="value-display" id="val-opacity">0.85</span>
+            </div>
+            <input type="range" id="input-opacity" min="0.0" max="1.5" step="0.05" value="0.85">
+          </div>
+        </div>
+      </section>
+
+      <!-- Sliders Column 3: EM Camera Filters -->
+      <section class="control-section">
+        <h3>EM CAMERA FILTERS</h3>
+        <div class="filter-btn-group">
+          <button class="btn active" id="filter-visible">Visible Light</button>
+          <button class="btn" id="filter-xray">X-Ray / UV View</button>
+          <button class="btn" id="filter-ir">Infrared View (IR)</button>
+          <button class="btn" id="filter-beaming">Doppler Beaming</button>
+        </div>
+        <div class="filter-desc" style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.25;">
+          False-color sensors reveal relativistic speed shifts and thermal energy variations across plasma fields.
+        </div>
+      </section>
+
+      <!-- Sliders Column 4: Flight Deck Tours -->
+      <section class="control-section">
+        <h3>FLIGHT DECK</h3>
+        <div class="preset-btn-group">
+          <button class="btn" id="tour-orbit">Orbit Tour</button>
+          <button class="btn" id="tour-polar">Polar Flyby</button>
+          <button class="btn warning-btn" id="tour-infall">Infall Singularity</button>
+          <button class="btn" id="btn-pause">Pause Flow</button>
+        </div>
+
+        <div class="slider-group" style="margin-top: 4px;">
+          <div class="slider-header">
+            <label for="input-zoom">Orbit Distance</label>
+            <span class="value-display" id="val-zoom">22.0</span>
+          </div>
+          <input type="range" id="input-zoom" min="4.0" max="40.0" step="0.5" value="22.0">
+        </div>
+
+        <div class="button-grid" style="grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
+          <button class="btn" id="btn-penrose-probe">Launch Probe</button>
+          <button class="btn warning-btn" id="btn-evaporate">Evaporate BH</button>
+        </div>
+        <div class="button-grid" style="grid-template-columns: 1fr; margin-top: 4px;">
+          <button class="btn" id="btn-reset-cam">Reset Coordinates</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Flashing warning banner for cinematic events -->
+    <div id="alert-banner" class="alert-banner hidden">
+      <div class="alert-border"></div>
+      <div class="alert-content">
+        <h2 id="alert-title">SYSTEM ALERT</h2>
+        <p id="alert-message">CROSSING EVENT HORIZON BOUNDARY</p>
+      </div>
+    </div>
+
+    <!-- Floating Zoom Controls -->
+    <div class="floating-controls">
+      <button class="zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
+      <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out">−</button>
+    </div>
+
+    <!-- Calibration grid canvas layer (CPU rendered overlays, or vector overlays) -->
+    <div id="svg-overlay-container">
+      <svg id="calibration-svg" width="100%" height="100%">
+        <!-- Dynamic overlay circles representing horizon and photon sphere boundaries will be drawn here -->
+        <circle id="overlay-horizon" class="cal-circle horizon" cx="50%" cy="50%" r="0" />
+        <circle id="overlay-photon" class="cal-circle photon" cx="50%" cy="50%" r="0" />
+        <line id="overlay-axis" class="cal-axis" x1="0" y1="50%" x2="100%" y2="50%" />
+        <line id="overlay-v-axis" class="cal-axis" x1="50%" y1="0" x2="50%" y2="100%" />
+        <text id="overlay-lbl-horizon" class="cal-label horizon-lbl" x="51%" y="53%">Horizon</text>
+        <text id="overlay-lbl-photon" class="cal-label photon-lbl" x="51%" y="56%">Photon Sphere</text>
+      </svg>
+    </div>
+    <!-- Full-screen explosion flash overlay -->
+    <div id="flash-overlay"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
