@@ -4,6 +4,7 @@ An interactive, scientifically rigorous, high-performance 3D General Relativisti
 
 ![Interactive Simulation Screen](https://img.shields.io/badge/WebGL2-Performance-cyan?style=for-the-badge&logo=webgl)
 ![Framework](https://img.shields.io/badge/Three.js-0.184.0-blue?style=for-the-badge&logo=three.js)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Live%20Demo-black?style=for-the-badge&logo=vercel)](https://black-hole-mocha.vercel.app/)
 ![Status](https://img.shields.io/badge/Simulation-Phase%203%20Complete-success?style=for-the-badge)
 
 ---
